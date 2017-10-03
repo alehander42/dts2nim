@@ -1,5 +1,7 @@
 # `dts2nim`: a TypeScript/Nim bridge
 
+A fork, please look into [mcclure's excellent](https://github.com/mcclure/dts2nim)
+
 This is a command-line utility that analyzes a [TypeScript](https://www.typescriptlang.org/) program or type definition file and emits a source module for the [Nim](http://nim-lang.org/) programming language, containing import bindings for all symbols visible in the TypeScript file. In other words, this allows you to use any JavaScript library which TypeScript can use, from within Nim.
 
 ## Usage

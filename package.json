@@ -11,10 +11,10 @@
   "main": "bin/dts2nim.js",
   "devDependencies": {},
   "files": [
-  	"bin/dts2nim.js"
+    "bin/dts2nim.js"
   ],
   "bin": {
-  	"dts2nim" : "bin/dts2nim.js"
+    "dts2nim": "bin/dts2nim.js"
   },
   "scripts": {
     "prepublish": "make all",

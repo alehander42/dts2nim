@@ -1,10 +1,12 @@
 {
   "compilerOptions": {
     "module": "commonjs",
-    "outDir": "bin"
+    "moduleResolution": "node",
+    "outDir": "bin",
+    "target": "es2015"
   },
   "files": [
     "typings/index.d.ts",
-    "src/dts2nim.ts"
+    "src/dts2nim2.ts"
   ]
 }

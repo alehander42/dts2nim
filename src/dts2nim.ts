@@ -43,7 +43,6 @@ if (sourceFiles.length <= 1)
 	error("File not found")
 
 let typeChecker = program.getTypeChecker()
-
 // Initialize output
 
 let warn  : (msg: string) => void = null
@@ -392,6 +391,16 @@ class LiteralTypeGen implements TypeGen {
 
 	declString() : string { throw new CustomError("Tried to emit a declaration for a core type") }
 	typeString() { return this.literal }
+
+	depends() { return [] }
+	dependKey() { return null }
+}
+
+class ArrayGen implements TypeGen {
+	constructor(public element: TypeGen) {}
+
+	declString() : string { throw new CustomError("Tried to emit a declaration for a core type") }
+	typeString() { return `seq[${this.element.typeString()}]` }
 
 	depends() { return [] }
 	dependKey() { return null }
@@ -906,8 +915,43 @@ class GenVendor {
 	}
 
 	typeGen(tsType: ts.Type) : TypeGen {
+		var flags = [ts.TypeFlags.Any,
+			ts.TypeFlags.String,
+			ts.TypeFlags.Number,
+			ts.TypeFlags.Boolean,
+			ts.TypeFlags.Void,
+			ts.TypeFlags.Undefined,
+			ts.TypeFlags.Null,
+			ts.TypeFlags.Enum,
+			ts.TypeFlags.StringLiteral,
+			ts.TypeFlags.TypeParameter,
+			ts.TypeFlags.Class,
+			ts.TypeFlags.Interface,
+			ts.TypeFlags.Reference,
+			ts.TypeFlags.Tuple,
+			ts.TypeFlags.Union,
+			ts.TypeFlags.Intersection,
+			ts.TypeFlags.Anonymous,
+			ts.TypeFlags.Instantiated,
+			ts.TypeFlags.ObjectLiteral,
+			ts.TypeFlags.ESSymbol,
+			ts.TypeFlags.ThisType,
+			ts.TypeFlags.ObjectLiteralPatternWithComputedProperties,
+			ts.TypeFlags.StringLike,
+			ts.TypeFlags.NumberLike,
+			ts.TypeFlags.ObjectType,
+			ts.TypeFlags.UnionOrIntersection,
+			ts.TypeFlags.StructuredType]
+		var f = []
+		for (var flag of flags) {
+			// var flag = ts.TypeFlags[1 << z]
+			if (tsType.flags & flag) {
+				f.push(`[${ts.TypeFlags[flag]}]`)
+			}
+		}
+		console.log(`${tsType.flags}: ${f.join(' ')}`)
 		if (tsType.flags & ts.TypeFlags.Number) // FIXME: Numberlike?
-			return new LiteralTypeGen("float")
+			return new LiteralTypeGen("int")
 		if (tsType.flags & ts.TypeFlags.String) // FIXME: Stringlike?
 			return new LiteralTypeGen("cstring")
 		if (tsType.flags & ts.TypeFlags.Void)
@@ -926,7 +970,18 @@ class GenVendor {
 			if (callSignatures.length == 1)
 				return this.signatureTypeGen(tsType, callSignatures[0])
 		}
-		
+		if (tsType.flags & ts.TypeFlags.StringLiteral) {
+			return new LiteralTypeGen("cstring")
+		}
+		if (tsType.flags & ts.TypeFlags.Reference) {
+			return new ArrayGen(this.typeGen((tsType as ts.TypeReference).target))
+		}
+		if (tsType.flags & ts.TypeFlags.Any) {
+			return new LiteralTypeGen("js")
+		}
+		// if (tsType.flags & ts.TypeFlags.TypeParameter) {
+		// 	return this.typeGen((tsType as ts.InterfaceType).thisType)
+		// }
 		throw new UnusableType(tsType)
 	}
 }
@@ -992,8 +1047,10 @@ for (let sym of typeChecker.getSymbolsInScope(sourceFile.endOfFileToken, 0xFFFFF
 
 		// Unsupported
 		} else {
-			warn(`Could not figure out how to translate symbol ${sym.name}:`
-				+ typeChecker.typeToString(tsType))
+			generators.push( vendor.variableGen(sym, tsType) )
+			// console.log(sym.flags, typeChecker.typeToString(tsType), sym)
+			// warn(`Could not figure out how to translate symbol ${sym.name}:`
+			// 	+ typeChecker.typeToString(tsType))
 		}
 	} catch (_e) {
 		let e:{} = _e
@@ -1032,3 +1089,4 @@ write( declsFor(sortedGenerators) )
 // We successfully reached the end, so if we have a file to write we can do that now
 if (commander.outfile)
 	fs.writeFileSync(commander.outfile, writeBuild)
+
